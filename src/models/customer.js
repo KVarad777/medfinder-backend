@@ -11,11 +11,6 @@ const customerSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-
-    // 🔐 OTP
-    otp: String,
-    otpExpiresAt: Date,
-
     orderIds: {
       type: [mongoose.Schema.Types.ObjectId],
       default: [],
