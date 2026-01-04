@@ -6,15 +6,15 @@ const cors = require("cors");
 
 const app = express();
 
-app.use(cors());
+app.use(cors({ origin: "*" }));
 app.use(express.json());
 
-// ✅ ROOT ROUTE (THIS FIXES Cannot GET /)
+// ROOT CHECK
 app.get("/", (req, res) => {
   res.send("✅ MedFinder Backend is running");
 });
 
-// API ROUTES
+// ROUTES
 app.use("/api/customer", require("./src/routes/customer"));
 app.use("/api/verify-qr", require("./src/routes/verify"));
 app.use("/api/shops", require("./src/routes/shops"));

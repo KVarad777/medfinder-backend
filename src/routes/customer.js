@@ -1,42 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Customer = require("../models/customer");
-
-/**
- * LOGIN CUSTOMER
- */
-router.post("/login", async (req, res) => {
-  try {
-    const { mobileNumber } = req.body;
-
-    if (!mobileNumber) {
-      return res.status(400).json({
-        success: false,
-        message: "Mobile number is required",
-      });
-    }
-
-    const customer = await Customer.findOne({ mobileNumber });
-
-    if (!customer) {
-      return res.status(404).json({
-        success: false,
-        message: "Customer not found",
-      });
-    }
-
-    res.json({
-      success: true,
-      customer,
-    });
-  } catch (error) {
-    console.error("LOGIN ERROR:", error);
-    res.status(500).json({
-      success: false,
-      message: "Server error",
-    });
-  }
-});
+const { generateToken } = require("../utils/jwt");
 
 /**
  * SIGNUP CUSTOMER
@@ -48,13 +13,12 @@ router.post("/signup", async (req, res) => {
     if (!mobileNumber || !name) {
       return res.status(400).json({
         success: false,
-        message: "Mobile number and name are required",
+        message: "Mobile number and name required",
       });
     }
 
-    const existing = await Customer.findOne({ mobileNumber });
-
-    if (existing) {
+    const exists = await Customer.findOne({ mobileNumber });
+    if (exists) {
       return res.status(409).json({
         success: false,
         message: "Customer already exists",
@@ -66,24 +30,26 @@ router.post("/signup", async (req, res) => {
 
     res.status(201).json({
       success: true,
-      customer,
+      message: "Signup successful",
     });
-  } catch (error) {
-    console.error("SIGNUP ERROR:", error);
-    res.status(500).json({
-      success: false,
-      message: "Server error",
-    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
 /**
- * GET CUSTOMER BY ID
+ * REQUEST OTP
  */
-router.get("/:id", async (req, res) => {
+router.post("/request-otp", async (req, res) => {
   try {
-    const customer = await Customer.findById(req.params.id);
+    const { mobileNumber } = req.body;
 
+    if (!mobileNumber) {
+      return res.status(400).json({ success: false, message: "Mobile required" });
+    }
+
+    const customer = await Customer.findOne({ mobileNumber });
     if (!customer) {
       return res.status(404).json({
         success: false,
@@ -91,15 +57,59 @@ router.get("/:id", async (req, res) => {
       });
     }
 
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    customer.otp = otp;
+    customer.otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
+    await customer.save();
+
+    // ⚠️ TEMP (replace with SMS later)
+    console.log("OTP for", mobileNumber, ":", otp);
+
+    res.json({ success: true, message: "OTP sent" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+/**
+ * VERIFY OTP + LOGIN + JWT
+ */
+router.post("/verify-otp", async (req, res) => {
+  try {
+    const { mobileNumber, otp } = req.body;
+
+    const customer = await Customer.findOne({ mobileNumber });
+
+    if (
+      !customer ||
+      customer.otp !== otp ||
+      customer.otpExpiresAt < new Date()
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired OTP",
+      });
+    }
+
+    customer.otp = null;
+    customer.otpExpiresAt = null;
+    await customer.save();
+
+    const token = generateToken(customer._id);
+
     res.json({
       success: true,
-      customer,
+      token,
+      customer: {
+        name: customer.name,
+        mobileNumber: customer.mobileNumber,
+      },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Server error",
-    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
