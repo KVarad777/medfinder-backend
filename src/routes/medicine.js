@@ -35,5 +35,48 @@ router.get("/:name/shops", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+/**
+ * RESERVE A MEDICINE
+ */
+router.post("/reserve", async (req, res) => {
+  try {
+    const { medicine_name, customer_name } = req.body;
+
+    if (!medicine_name || !customer_name) {
+      return res.json({
+        success: false,
+        message: "Medicine name and customer required",
+      });
+    }
+
+    // Find one available unit
+    const medicine = await Medicine.findOne({
+      medicine_name,
+      is_selled: false,
+    });
+
+    if (!medicine) {
+      return res.json({
+        success: false,
+        message: "Medicine out of stock",
+      });
+    }
+
+    medicine.is_selled = true;
+    medicine.customer_name = customer_name;
+    medicine.selling_date_time = new Date();
+
+    await medicine.save();
+
+    res.json({
+      success: true,
+      message: "Medicine reserved successfully",
+      medicine,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
 
 module.exports = router;
