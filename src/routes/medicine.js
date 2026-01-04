@@ -78,5 +78,20 @@ router.post("/reserve", async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
+/**
+ * GET STOCK OF A SHOP
+ */
+router.get("/shop/:shopId", async (req, res) => {
+  try {
+    const meds = await Medicine.find({
+      medical_shop_id: req.params.shopId,
+      is_selled: false,
+    });
+
+    res.json(meds);
+  } catch (e) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 module.exports = router;
