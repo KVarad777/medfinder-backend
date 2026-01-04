@@ -3,11 +3,11 @@ const router = express.Router();
 const MedicalShop = require("../models/medicalshop");
 
 /**
- * GET VERIFIED MEDICAL SHOPS
+ * GET ALL MEDICAL SHOPS (ANY STATUS)
  */
-router.get("/verified", async (req, res) => {
+router.get("/", async (req, res) => {
   try {
-    const shops = await MedicalShop.find({ status: "verified" });
+    const shops = await MedicalShop.find();
     res.json(shops);
   } catch (err) {
     console.error(err);
