@@ -33,7 +33,7 @@ Medical shops:
 ### Frontend (separate module)
 - Flutter
 - Android application
-- Google Maps / OpenStreetMap
+- OpenStreetMap
 - QR scanning using mobile scanner
 
 ---
